@@ -1,0 +1,30 @@
+{
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name": "io.github.andreasjhagen/mermaid-diagrams",
+    "description": "Render Mermaid.js diagrams (flowcharts, sequence diagrams, Gantt charts, etc.) to images",
+    "version": "1.0.1",
+    "packages": [
+        {
+            "registryType": "npm",
+            "identifier": "@cynosure-mcp/mermaid-diagrams",
+            "version": "1.0.1",
+            "transport": {
+                "type": "stdio"
+            },
+            "environmentVariables": [
+                {
+                    "name": "MERMAID_OUTPUT_DIR",
+                    "description": "Directory to save rendered diagrams (defaults to an OS temp directory)",
+                    "isRequired": false,
+                    "format": "string",
+                    "isSecret": false
+                }
+            ]
+        }
+    ],
+    "repository": {
+        "url": "https://github.com/andreasjhagen/OpenAgent-MCPs",
+        "source": "github",
+        "subfolder": "mcp-mermaid-diagrams"
+    }
+}
