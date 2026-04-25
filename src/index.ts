@@ -79,7 +79,7 @@ const server = new McpServer({
     version: '1.0.0',
     title: 'Mermaid Diagrams',
     description: 'Render Mermaid.js diagrams to images. Supports flowcharts, sequence diagrams, Gantt charts, class diagrams, state diagrams, ER diagrams, pie charts, and more.',
-    icons: [{ src: 'https://raw.githubusercontent.com/andreasjhagen/OpenAgent-MCPs/main/mcp-mermaid-diagrams/icon.png', mimeType: 'image/png' }],
+    icons: [{ src: 'https://raw.githubusercontent.com/andreasjhagen/Cynosure-MCPs/main/mcp-mermaid-diagrams/icon.png', mimeType: 'image/png' }],
 });
 
 // ── Tool: render_diagram ───────────────────────────────────────────────────────
