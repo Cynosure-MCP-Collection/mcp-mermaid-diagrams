@@ -5,12 +5,20 @@ import { z } from 'zod';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { tmpdir } from 'node:os';
+import { execFile as execFileCallback } from 'node:child_process';
+import { promisify } from 'node:util';
+import { createRequire } from 'node:module';
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
-/** Kroki.io is a free open-source API for rendering diagrams (self-hostable). */
-const KROKI_BASE = 'https://kroki.io';
 const DEFAULT_OUTPUT_DIR = path.join(tmpdir(), 'cynosure-mcp', 'mermaid-diagrams');
+const DEFAULT_RENDER_WIDTH = 1600;
+const DEFAULT_RENDER_HEIGHT = 1200;
+const DEFAULT_RENDER_SCALE = 2;
+
+const execFile = promisify(execFileCallback);
+const require = createRequire(import.meta.url);
+const mermaidCliPath = path.join(path.dirname(require.resolve('@mermaid-js/mermaid-cli')), 'cli.js');
 
 function getOutputDir(): string {
     return process.env.MERMAID_OUTPUT_DIR || DEFAULT_OUTPUT_DIR;
@@ -38,37 +46,55 @@ async function saveImage(data: Buffer, prefix: string): Promise<string> {
 }
 
 /**
- * Render a Mermaid diagram to PNG using the Kroki API.
- * Kroki accepts the diagram source as the POST body and returns
- * the rendered image directly.
+ * Render Mermaid text to a PNG image buffer using the Mermaid CLI.
  */
 async function renderMermaid(
     code: string,
     theme: string,
     bgColor: string,
+    width: number,
+    height: number,
+    scale: number,
 ): Promise<{ ok: true; data: Buffer } | { ok: false; error: string }> {
-    // Wrap in %%{init}%% directive to set theme and background
-    let themedCode = code.trim();
-    if (!themedCode.startsWith('%%{') && theme !== 'default') {
-        themedCode = `%%{init: {'theme': '${theme}', 'themeVariables': {'background': '${bgColor}'}}}%%\n${themedCode}`;
-    }
+    const tempDir = fs.mkdtempSync(path.join(tmpdir(), 'cynosure-mermaid-'));
+    const inputPath = path.join(tempDir, 'input.mmd');
+    const outputPath = path.join(tempDir, 'output.png');
 
     try {
-        const res = await fetch(`${KROKI_BASE}/mermaid/png`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: themedCode,
-        });
+        fs.writeFileSync(inputPath, code.trim(), 'utf8');
 
-        if (res.ok) {
-            const arrayBuffer = await res.arrayBuffer();
-            return { ok: true, data: Buffer.from(arrayBuffer) };
-        }
+        await execFile(
+            process.execPath,
+            [
+                mermaidCliPath,
+                '--input',
+                inputPath,
+                '--output',
+                outputPath,
+                '--outputFormat',
+                'png',
+                '--theme',
+                theme,
+                '--backgroundColor',
+                bgColor,
+                '--width',
+                String(width),
+                '--height',
+                String(height),
+                '--scale',
+                String(scale),
+                '--quiet',
+            ],
+            { maxBuffer: 10 * 1024 * 1024 }
+        );
 
-        const errorText = await res.text();
-        return { ok: false, error: `Rendering failed (${res.status}): ${errorText}` };
+        return { ok: true, data: fs.readFileSync(outputPath) };
     } catch (err) {
-        return { ok: false, error: `Failed to connect to rendering service: ${(err as Error).message}` };
+        const error = err as Error & { stderr?: string | Buffer };
+        const stderr = error.stderr?.toString().trim();
+        return { ok: false, error: `Rendering failed: ${stderr || error.message}` };
+    } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
     }
 }
 
@@ -116,10 +142,26 @@ server.registerTool(
             background_color: z.string().default('white').describe(
                 'Background color for the diagram (CSS color value, e.g. "white", "#1e1e2e", "transparent")'
             ),
+            width: z.number().int().min(320).max(8000).default(DEFAULT_RENDER_WIDTH).describe(
+                'Viewport width in pixels. Larger values make complex diagrams less cramped.'
+            ),
+            height: z.number().int().min(240).max(8000).default(DEFAULT_RENDER_HEIGHT).describe(
+                'Viewport height in pixels. Larger values make complex diagrams less cramped.'
+            ),
+            scale: z.number().min(1).max(4).default(DEFAULT_RENDER_SCALE).describe(
+                'Puppeteer scale factor for PNG output. Higher values increase pixel density.'
+            ),
         },
     },
     async (params) => {
-        const result = await renderMermaid(params.code, params.theme, params.background_color);
+        const result = await renderMermaid(
+            params.code,
+            params.theme,
+            params.background_color,
+            params.width,
+            params.height,
+            params.scale
+        );
 
         if (!result.ok) {
             return { content: [{ type: 'text', text: result.error }] };
