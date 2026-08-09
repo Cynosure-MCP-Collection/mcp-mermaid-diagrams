@@ -113,6 +113,7 @@ const server = new McpServer({
 server.registerTool(
     'render_diagram',
     {
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
         description: [
             'Render a Mermaid.js diagram to a PNG image. Returns the image inline for display in the chat.',
             '',
