@@ -39,5 +39,13 @@
     "flowchart",
     "visualization",
     "ai"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cynosure-MCP-Collection/mcp-mermaid-diagrams.git"
+  },
+  "homepage": "https://github.com/Cynosure-MCP-Collection/mcp-mermaid-diagrams#readme",
+  "bugs": {
+    "url": "https://github.com/Cynosure-MCP-Collection/mcp-mermaid-diagrams/issues"
+  }
 }
