@@ -1,7 +1,7 @@
 {
   "name": "@cynosure-mcp/mermaid-diagrams",
   "mcpName": "io.github.andreasjhagen/mermaid-diagrams",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "MCP server for rendering Mermaid.js diagrams to images",
   "type": "module",
   "main": "dist/index.js",
